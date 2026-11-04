@@ -1,0 +1,63 @@
+name: Release
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with: 
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 21.x
+          registry-url: https://npm.pkg.github.com/
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v0.10.2
+        with:
+          versionSpec: '5.x'
+            
+      - name: Determine Version
+        uses: gittools/actions/gitversion/execute@v0.10.2
+          
+      - name: 'Change NPM version'
+        uses: reedyuk/npm-version@1.2.2
+        with:
+          version: $GITVERSION_SEMVER
+
+      - name: Install dependencies
+        run: npm install
+  
+      - name: Run tests
+        run: npm test
+          
+      - name: Publish package 
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+      - name: Generate SBoM
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            /repos/wulfland/package-recipe/dependency-graph/sbom > sbom.json
+
+      - name: Upload SBoM to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          file: sbom.json
+          asset_name: SBoM
+          tag: ${{ github.ref }}
+          overwrite: true
+          
