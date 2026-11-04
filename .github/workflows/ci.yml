@@ -132,7 +132,7 @@ jobs:
           useConfigFile: true
      
       # If we use a token or app instead of the GITHUB_TOKEN, the release
-      # would trigger the other workflow. As we are using the GITHUB_TOKEN
+      # would trigger the other workflow.  As we are using the GITHUB_TOKEN
       # we manually have to publish the package.
       # In a real-world scenario we would put the logic in a reusable workflow or
       # composite action.
